@@ -139,4 +139,77 @@ find_stop_codon <- function(nt_seq,rf){
   codon_pos <- sort(codon_pos)
   return(codon_pos)
 }
-temp <- find_stop_codon(mito_seq[1:500],1)
+
+find_orf <- function(nt_seq,rf){
+  
+  nt_seq <- sapply(nt_seq,tolower)
+  start_pos <- NULL
+  stop_pos <- NULL
+  start_codon <- c("atg", "ata", "att", "atc", "gtg")
+  stop_codon <- c("taa", "tag", "aga", "agg")
+  
+  i <- rf
+  while (i<length(nt_seq)){
+    
+    window1 <- nt_seq[i:(i+2)]
+    window1 <- paste(window1,collapse="")
+    
+    if (window1 %in% start_codon){
+      
+      j <- i
+      while(j<length(nt_seq)){
+        
+        window2 <- nt_seq[j:(j+2)]
+        window2 <- paste(window2,collapse="")
+        
+        if( window2 %in% stop_codon & (j-i) > 5){
+          start_pos <- append(start_pos,i)
+          stop_pos <- append(stop_pos,(j+2))
+          i <- j
+          break
+        }
+        
+        j <- j+3
+      }
+      
+    }
+    i <- i+3
+  }
+
+  #cat("start",start_pos,"\nStop",stop_pos)
+  orf_matrix <- cbind(start_pos,stop_pos)
+  #return(orf_matrix)
+  
+}
+
+translate <- function(nt_seq){
+  
+  nt_seq <- sapply(nt_seq,toupper)
+  base1 <- "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
+  base1 <- strsplit(base1,split="")
+  base2 <- "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
+  base2 <- strsplit(base2,split="")
+  base3 <- "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
+  base3 <- strsplit(base3,split="")
+  aa <- "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG"
+  aa <- unlist(strsplit(aa,split=""))
+  nt_code <-paste0(unlist(base1),unlist(base2),unlist(base3))
+  
+  codon_code <- rbind(nt_code,aa)
+  
+  prot_seq <- NULL
+  
+  i <- 1
+  while(i<length(nt_seq)){
+    window <- nt_seq[i:(i+2)]
+    window <- paste(window,collapse="")
+    nt_index <- match(window,nt_code)
+    prot_seq <- append(prot_seq,aa[nt_index])
+    i <- i+3
+  }
+  return(prot_seq)
+}
+
+prot_seq <- translate(mito_seq[13:201])
+occurance <- table(prot_seq)
+df <- as.data.frame(occurance)
