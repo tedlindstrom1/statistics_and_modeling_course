@@ -204,7 +204,7 @@ adlt_wght_plt <- ggplot(data=adlt_wght_df, aes(x=LarvalHost,color=MaternalHost))
   geom_errorbar(aes(ymin=LowerError, ymax=UpperError),width=0.1) +
   theme_classic() +
   labs(x="Larval host species", y="Adult weight (weight units)", 
-       color="Maternal host species") +
+       color="Maternal host species",title = "Interaction plot of adult weight and host species") +
   theme(aspect.ratio = 1,legend.position=c(0.8,0.85))
 print(adlt_wght_plt)
 
