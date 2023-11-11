@@ -6,7 +6,62 @@ butterflies <- read.csv('butterflies.csv')
 # Create models for each response variable
 dev_time_m <- lm(butterflies$DevelopmentTime ~ (butterflies$LarvalHost * butterflies$MaternalHost))
 grwt_rate_m <- lm(butterflies$GrowthRate ~ butterflies$LarvalHost * butterflies$MaternalHost)
-adlt_weight_m <- lm(butterflies$AdultWeight ~ butterflies$LarvalHost * butterflies$MaternalHost)
+adlt_weight_m <- lm(butterflies$AdultWeight ~ butterflies$LarvalHost * butterflies$MaternalHost -1)
+
+# Create data frames containing the residuals of each model
+dev_time_res <- data.frame(residuals(dev_time_m),seq(1,length(dev_time_m$residuals)))
+colnames(dev_time_res) <- c("DevelopmentTime","Sample")
+grwt_rate_res <- data.frame(residuals(grwt_rate_m),seq(1,length(grwt_rate_m$residuals)))
+colnames(grwt_rate_res) <- c("GrowthRate", "Sample")
+adlt_weight_res <- data.frame(residuals(adlt_weight_m),seq(1,length(adlt_weight_m$residuals)))
+colnames(adlt_weight_res) <- c("AdultWeight","Sample")
+
+# Investigate residuals by plotting histograms and a qq plot for each
+
+dev_time_res_plt <- ggplot(data=dev_time_res,aes(x=DevelopmentTime)) +
+  geom_histogram(aes(y=..density..),binwidth = 0.5) +
+  geom_vline(aes(xintercept = mean(DevelopmentTime)))+
+  geom_density(alpha=0.2)+
+  theme_classic()
+print(dev_time_res_plt)
+
+dev_time_qqplt <- ggplot(data=dev_time_res, aes(sample=DevelopmentTime)) +
+  stat_qq() +
+  stat_qq_line() +
+  theme_classic()
+print(dev_time_qqplt)
+
+grwt_rate_res_plt <- ggplot(data=grwt_rate_res,aes(x=GrowthRate)) +
+  geom_histogram(aes(y=..density..),binwidth = 0.003) +
+  geom_vline(aes(xintercept = mean(GrowthRate)))+
+  geom_density(alpha=0.2)+
+  theme_classic()
+print(grwt_rate_res_plt)
+
+grwt_rate_qqplt <- ggplot(data=grwt_rate_res, aes(sample=GrowthRate)) +
+  stat_qq() +
+  stat_qq_line() +
+  theme_classic()
+print(grwt_rate_qqplt)
+
+adlt_weight_res_plt <- ggplot(data=adlt_weight_res,aes(x=AdultWeight)) +
+  geom_histogram(aes(y=..density..),colour="black",fill="grey",binwidth = 2) +
+  geom_vline(aes(xintercept = mean(AdultWeight)), color="red", size=0.6)+
+  geom_density(size=0.4)+
+  theme_classic() +
+  labs(x="Adult weight residuals", y="Density") +
+  ggtitle("Histogram of adult weight residuals") +
+  theme(aspect.ratio = 1)
+print(adlt_weight_res_plt)
+
+adlt_weight_qqplt <- ggplot(data=adlt_weight_res, aes(sample=AdultWeight)) +
+  stat_qq() +
+  stat_qq_line() +
+  theme_classic() +
+  labs(x="Normal theoretical quantiles", y="Sample quantiles") +
+  ggtitle("QQ plot of adult weight residuals") +
+  theme(aspect.ratio = 1)
+print(adlt_weight_qqplt)
 
 # Create data frames based on each combination of host plant, for plotting
 df_barL_berM <- subset(butterflies, LarvalHost == "Barbarea" & MaternalHost == "Berteroa")
@@ -133,8 +188,8 @@ adlt_wght_se <- c(sd(df_barL_berM$AdultWeight)/sqrt(length(df_barL_berM$AdultWei
 wght_upper_error <- NULL
 wght_lower_error <- NULL
 for (i in 1:length(adlt_wght_means)){
-  wght_upper_error[i] <- (adlt_wght_means[i]+adlt_wght_se[i])
-  wght_lower_error[i] <- (adlt_wght_means[i]-adlt_wght_se[i])
+  wght_upper_error[i] <- (adlt_wght_means[i]+1.96*adlt_wght_se[i])
+  wght_lower_error[i] <- (adlt_wght_means[i]-1.96*adlt_wght_se[i])
 }
 
 adlt_wght_df <- data.frame(dev_times_hostL,dev_times_hostM,adlt_wght_means,
@@ -148,9 +203,9 @@ adlt_wght_plt <- ggplot(data=adlt_wght_df, aes(x=LarvalHost,color=MaternalHost))
   geom_line(aes(y=AdultWeight, group=MaternalHost)) +
   geom_errorbar(aes(ymin=LowerError, ymax=UpperError),width=0.1) +
   theme_classic() +
-  labs(x="Larval host species", y="Adult wright", 
+  labs(x="Larval host species", y="Adult weight (weight units)", 
        color="Maternal host species") +
-  theme(legend.position=c(0.8,0.85))
+  theme(aspect.ratio = 1,legend.position=c(0.8,0.85))
 print(adlt_wght_plt)
 
 # 2-way ANOVA and proportion of variance from variables
@@ -163,3 +218,10 @@ adlt_wght_mhost_prop <- adlt_wght_an$`Sum Sq`[2]/tot_SS_wght
 adlt_wght_interact_prop <- adlt_wght_an$`Sum Sq`[3]/tot_SS_wght
 adlt_wght_residual_prop <- adlt_wght_an$`Sum Sq`[4]/tot_SS_wght
 
+cat("~~~~~~~~ Proportion of variance per factor ~~~~~~~~\n")
+cat("Total SS: ",tot_SS_wght,"\nTotal variance: ",adlt_wght_variance,
+    "\nLarval host proportion of variance: ",adlt_wght_lhost_prop*100,
+    "%\nMaternal host proportion of variance: ",adlt_wght_mhost_prop*100,
+    "%\nInteraction of larval and maternal host proportion of variance: ",
+    adlt_wght_interact_prop*100,"%\nResiduals proportion of variance: ",
+    adlt_wght_residual_prop*100, "%")
